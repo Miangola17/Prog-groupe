@@ -1,0 +1,135 @@
+===============================================================
+       STRUCTURE DES DOSSIERS ET CLASSES DU PROJET
+              (Framework + App de test)
+===============================================================
+
+===============================================================
+A. LE FRAMEWORK
+===============================================================
+
+framework/
+│
+├── src/
+│   └── mg/itu/framework/
+│       │
+│       ├── FrontServlet.java
+│       │     → Le servlet central qui intercepte toutes les requêtes
+│       │     → Contient init(), doGet(), doPost(), processRequest()
+│       │
+│       ├── ContextListener.java
+│       │     → Lance le scan au démarrage de Tomcat
+│       │     → Stocke la Map dans le ServletContext
+│       │
+│       ├── ModelAndView.java          [ajouté au Sprint 5]
+│       │     → Contient l'URL de la vue JSP + les données (Map)
+│       │
+│       ├── annotation/
+│       │   ├── Controller.java
+│       │   │     → Annotation @Controller (sur une classe)
+│       │   ├── UrlMapping.java
+│       │   │     → Annotation @UrlMapping (sur une méthode)
+│       │   │     → Attributs : value (url) + method (GET/POST)
+│       │   └── RestAPI.java           [ajouté au Sprint 6]
+│       │         → Annotation @RestAPI (sur une méthode)
+│       │         → Indique que la méthode retourne du JSON
+│       │
+│       ├── utils/
+│       │   ├── ClassScanner.java
+│       │   │     → Charge toutes les classes d'un package
+│       │   │     → Mode package spécifique + mode all
+│       │   └── Util.java
+│       │         → Construit la Map<String, Mapping>
+│       │         → Détecte les doublons → throws Exception
+│       │
+│       └── model/
+│           ├── Mapping.java
+│           │     → Stocke la classe + la méthode associée à une URL
+│           └── HttpMethode.java       [ajouté au Sprint 4]
+│                 → Enum avec GET et POST
+│
+├── lib/
+│   ├── servlet-api.jar       ← JAR de Tomcat (pour compiler)
+│   └── gson.jar              ← Librairie JSON (ajouté au Sprint 6)
+│
+└── script.sh                 ← Script de compilation → génère framework.jar
+
+===============================================================
+B. L'APPLICATION DE TEST
+===============================================================
+
+appTest/
+│
+├── src/
+│   └── mg/itu/apptest/
+│       └── controllers/
+│           ├── HomeController.java
+│           │     → Classe avec @Controller
+│           │     → Méthodes avec @UrlMapping
+│           └── EmpController.java     [ajouté au Sprint 5]
+│                 → Classe avec @Controller
+│                 → Méthodes qui retournent ModelAndView
+│                 → Méthodes avec @RestAPI (Sprint 6)
+│
+└── WebContent/
+    ├── WEB-INF/
+    │   ├── web.xml
+    │   │     → Déclare FrontServlet + ContextListener
+    │   │     → init-param : nom du package controllers
+    │   │     → init-param : prefixe (/WEB-INF/views/)
+    │   │     → init-param : suffixe (.jsp)
+    │   │     → load-on-startup : 1
+    │   ├── lib/
+    │   │   └── framework.jar          ← Le jar compilé du framework
+    │   └── views/                     [ajouté au Sprint 5]
+    │       └── employe/
+    │           └── liste.jsp          ← La vue JSP
+    └── index.jsp                      ← (optionnel)
+
+===============================================================
+C. RÉCAPITULATIF DES CLASSES PAR SPRINT
+===============================================================
+
+Sprint 0 :
+  → FrontServlet.java
+
+Sprint 1 :
+  → Controller.java (annotation)
+  → ClassScanner.java
+
+Sprint 2 :
+  → UrlMapping.java (annotation)
+  → Mapping.java
+
+Sprint 3 :
+  → Util.java (avec getMap + détection doublons)
+  → ContextListener.java
+  → Modification UrlMapping → ajout attribut method + default GET
+  → equals() + hashCode() sur la clé
+
+Sprint 4 :
+  → HttpMethode.java (enum GET/POST)
+  → Refactoring général (typage fort)
+
+Sprint 5 :
+  → ModelAndView.java
+  → Fichiers JSP dans l'app de test
+
+Sprint 6 :
+  → RestAPI.java (annotation)
+  → gson.jar dans lib/
+
+===============================================================
+D. LA MAP DE ROUTAGE (coeur du framework)
+===============================================================
+
+  Map<String, Mapping>
+       ↑                  ↑
+  clé = "GET|/test"    valeur = Mapping(classe, méthode)
+        "POST|/test"
+        "GET|/home"
+
+  → Construite par Util.getMap() dans ContextListener
+  → Stockée dans ServletContext
+  → Utilisée par FrontServlet dans processRequest()
+
+===============================================================

@@ -1,0 +1,97 @@
+// AppServices.idl
+//
+// Ce fichier est le seul "contrat" partage entre le monde C++ et le monde
+// Java. Il ne contient AUCUNE logique, juste la forme des services.
+//
+// - FileService  : sera implemente en JAVA (acces fichiers : creer, lire,
+//                   ecrire, supprimer)
+// - DBService    : sera implemente en C++ (acces MySQL : insert, update,
+//                   delete, list, select)
+//
+// N'importe quel client (C++ ou Java) peut appeler N'IMPORTE LEQUEL des
+// deux services, quelle que soit la langue du serveur qui l'implemente.
+// C'est le principe meme de CORBA : l'IDL decrit l'interface, chaque
+// langage genere son propre squelette (skeleton) / souche (stub) a partir
+// du meme fichier .idl.
+
+module AppServices {
+
+    // Exception generique renvoyee par les deux services en cas d'erreur
+    // (fichier introuvable, erreur SQL, parametre invalide, etc.)
+    exception ServiceException {
+        string message;
+    };
+
+    // Une "ligne" de resultat generique = une liste de chaines
+    // (on reste simple et portable : pas de type SQL complexe sur le fil)
+    typedef sequence<string> StringSeq;
+    typedef sequence<StringSeq> RowSeq;
+
+
+    // ---------------------------------------------------------------
+    // Service fichiers -> implemente par le serveur JAVA
+    // ---------------------------------------------------------------
+    interface FileService {
+
+        // Cree un fichier vide (echoue si le fichier existe deja)
+        boolean create(in string filename)
+            raises (ServiceException);
+
+        // Ecrit du contenu dans un fichier.
+        // append = TRUE  -> ajoute a la fin
+        // append = FALSE -> ecrase le contenu existant
+        boolean write(in string filename, in string content, in boolean append)
+            raises (ServiceException);
+
+        // Lit et renvoie l'integralite du contenu d'un fichier
+        string read(in string filename)
+            raises (ServiceException);
+
+        // Supprime un fichier
+        boolean remove(in string filename)
+            raises (ServiceException);
+
+        // Fonctionnalite bonus : lit un fichier texte ligne par ligne et
+        // renvoie chaque ligne comme un tableau de colonnes separees par
+        // un delimiteur (utilise pour transformer un fichier en table
+        // MySQL, en combinaison avec DBService.insert)
+        RowSeq readAsRows(in string filename, in string delimiter)
+            raises (ServiceException);
+    };
+
+
+    // ---------------------------------------------------------------
+    // Service base de donnees -> implemente par le serveur C++
+    // ---------------------------------------------------------------
+    interface DBService {
+
+        // INSERT INTO table (columns...) VALUES (values...)
+        boolean insert(in string table, in StringSeq columns, in StringSeq values)
+            raises (ServiceException);
+
+        // UPDATE table SET setColumns=setValues WHERE whereColumn=whereValue
+        boolean update(in string table,
+                        in StringSeq setColumns, in StringSeq setValues,
+                        in string whereColumn, in string whereValue)
+            raises (ServiceException);
+
+        // DELETE FROM table WHERE whereColumn = whereValue
+        boolean remove(in string table, in string whereColumn, in string whereValue)
+            raises (ServiceException);
+
+        // SELECT * FROM table
+        RowSeq list(in string table)
+            raises (ServiceException);
+
+        // SELECT * FROM table WHERE whereColumn = whereValue
+        RowSeq select(in string table, in string whereColumn, in string whereValue)
+            raises (ServiceException);
+
+        // Fonctionnalite bonus : cree une table (si besoin) a partir d'un
+        // nom et d'une liste de noms de colonnes (type TEXT par defaut),
+        // puis insere toutes les lignes fournies. Utilise pour transformer
+        // un fichier (lu via FileService.readAsRows) en table MySQL.
+        boolean createTableAndInsertRows(in string table, in StringSeq columns, in RowSeq rows)
+            raises (ServiceException);
+    };
+};

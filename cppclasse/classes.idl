@@ -1,0 +1,13 @@
+module Classes {
+
+    typedef sequence<string> ListeNoms;
+
+    exception ErreurClasse {
+        string message;
+    };
+
+    interface GestionClasses {
+        ListeNoms listerClasses() raises (ErreurClasse);
+        ListeNoms listerEtudiants(in string nomClasse) raises (ErreurClasse);
+    };
+};
